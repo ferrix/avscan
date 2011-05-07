@@ -51,7 +51,8 @@ def timing(func):
         begin = time.time()
         result = func(*arg)
         end = time.time()
-        print '%s executed for %0.3f ms' % (func.func_name, (end-begin)*1000.0)
+        if DEBUG > 0:
+            print '%s executed for %0.3f ms' % (func.func_name, (end-begin)*1000.0)
         return result
     return wrapper
 
