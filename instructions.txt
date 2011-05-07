@@ -1,0 +1,84 @@
+T-110.6220 Spring 2011: Malware Analysis and Antivirus Technologies
+===================================================================
+
+Course Assignment: Simple Deobfuscating Antivirus Engine
+
+Assignment Description
+----------------------
+
+Most malware out there today is encrypted or obfuscated in some way. Typically the obfuscation comes in a form of an envelope that decrypts the actual file into memory when it is run. In order for antivirus engines to detect malware in a generic way they need to work around these kinds of envelopes.
+
+You are provided with ten test files. All of these files are harmless PE executables that are of your typical "helloworld" class of applications. Five of the files print out the string "You must *NOT* detect this file" and five the string "You must detect this file". Apart from this there is little difference in the files. The files are all obfuscated with a relatively simple obfuscator.
+
+Create a tool that can take as input a number of obfuscated files and can tell whether the files in question are obfuscated versions of the helloworld application that prints "You must detect this file". 
+
+The idea in this assignment is to think about generic ways of detecting malware and thus generic ways of removing or bypassing obfuscation. Points are awarded on the basis of how generic and efficient the solution of the student is.
+
+Deliverables
+------------
+
+Implement your tool/engine and write a short paper explaining and evaluating your design. Deliverables for this assignment include:
+
+   1. Report
+   2. Source code in Python
+   3. Demo session
+
+
+Software development
+--------------------
+
+You are allowed to use the following tools and libraries when you develop your program:
+
+- Python 2.5 or later and any library that comes with it by default
+
+- A disassembler library for Python (e.g. pydasm in libdasm <http://www.nologin.org/main.pl?action=codeView&codeId=49> or libdisassemble <http://www.immunitysec.com/resources-freesoftware.shtml>)
+
+- A PE parser for Python (e.g. PEfile <http://code.google.com/p/pefile/>)
+
+- An x86 emulator for Python (e.g. pyemu <http://code.google.com/p/pyemu/>)
+
+Rest of the code and logic you will have to develop yourself. You do not have to use a disassembler or a PE parser, but at least use of a public PE parser is advised.
+
+Report
+------
+
+An important part of the assignment is a report the student writes about his/her design. The report should describe the tool and also analyze how well it could work in real life. The test files are very small amd simple, there are very few of them, and they are not obfuscated with a particularly strong method. Therefore it is possible to de-obfuscate and detect these files with much simpler mechanisms than what real-life antiviruses would use.
+
+The report should be roughly 3-4 pages of text -- try to keep the report brief and to the point. The quality of the report has a high importance in grading of the assignment. The report needs to contain the following:
+
+   1. Description of the architecture. The idea and concept behind the design. How does the tool decide if the file in question should be detected or not?
+   
+   2. Pros and cons of the design and implementation. How generic is the solution? How many "fingerprints", if any, the tool has? How likely is it that the solution would proactively detect "bad6.exe"? How expandable is the solution? What if you would have a thousand different samples to detect and a hundred different obfuscators to bypass?
+   
+   3. How to improve the engine: Future work. What would you add or change if you would have more time to work on this? What kinds of things should be added in order for the tool to be useful to the general public?
+   
+   4. Evaluation on the performance (speed, memory usage, disk usage, ...) of the engine. Imagine that you would implement the same design in C++: Would this approach work in real-life on a typical consumer PC without slowing the system down to a grinding halt? What if you would have a 100.000 different samples to detect instead of the five similar ones? What if the scanned files are very large in size?
+   
+   5. Evaluation of how prone to false positives the engine would be in real life. If you would run your tool on terabytes worth of clean applications, would you have false alerts or not? Why?
+   
+Demo Session
+------------
+
+Tool is demoed to course staff. Demo takes place in Maari-M and the engine needs to be demoed on the Linux machines available in that classroom. The student needs to submit the report (in plaintext or PDF format) and the Python source files to the course staff by e-mail to T-110.6220@list.hut.fi with the subject "T-110.6220 project". The deadline is 10.5.2011 at 23:59.
+
+During the demo the student has to log in and show how the engine works and show that it detects only the correct file set. The student is also asked to demonstrate or explain some other aspects of the engine. The demo time is 15 minutes: 10 minutes for the demo itself and 5 minutes for questions from the course staff. 
+
+
+Grading
+-------
+
+1) Solutions works: The tool can correctly identify the files. Even if the solution just calculates a full-file md5 of the obfuscated files and makes a decision based on that the student will get these points (but not much more...). [5 pts]
+
+2) Solution is generic: The solution would work against real-life cases as well and it is not too specific to the files presented here. If your tool can de-obfuscate the files in question, but the design would not work against a second set of similarly obfuscated files, you will not get many points here. A solution that removes the obfuscation layer and then identifies the file will get good points on this one. Innovative "out-of-the-box" solutions may or may not get good points depending on their practicality and reasoning presented in the short paper. [20 pts]
+
+3) Performance: How practical is the solution from a consumer PC use-case perspective? What if there are a lot of malware detections in your database? Does the solution use unnecessarily large amounts of memory or does it take a long time to process the files? If the solution resorts to bruteforcing or other expensive computing, you will not get top marks. How well has the student analyzed the performance of the solution in her/his paper? [10 pts]
+
+4) Elegance and software quality: The overall level of the solution and its Python implementation. The "Wow" factor of the tool and design. [10 pts]
+
+5) Analysis: How well has the student been able to find all the pros and cons of his/her design and implementation? [15 pts]
+
+6) Future work. How well has the student presented the roadmap of things to improve in the solution? [5 pts]
+
+7) Quality of the demo. How well did the student present the engine? Were all important aspects covered? Was the engine stable during the demo? Was the student able to get his/her engine running immediately? [5 pts]
+
+Total: 70 points
