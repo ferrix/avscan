@@ -1,0 +1,58 @@
+Index: PyCPU.py
+===================================================================
+--- PyCPU.py	(revision 19)
++++ PyCPU.py	(working copy)
+@@ -10,7 +10,7 @@
+ #
+ ########################################################################
+ 
+-import sys, os, time, struct, re
++import sys, time, struct, re
+ 
+ sys.path.append("lib")
+ 
+@@ -16759,6 +16759,44 @@
+                 else:
+                     self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2value, op3value)
+ 
++        #32 /r XOR r8 
++        elif instruction.opcode == 0x32:
++
++            osize = 1
++
++            op1value = self.get_register(op1.reg, osize)
++
++            if op2.type == pydasm.OPERAND_TYPE_REGISTER:
++                op2value = self.get_register(op2.reg, osize)
++                
++                # Do logic
++                result = op1value ^ op2value
++
++                self.set_flags("LOGIC", op1value, op2value, result, osize)
++
++                self.set_register(op1.reg, result, osize)
++
++            elif op2.type == pydasm.OPERAND_TYPE_MEMORY:
++                op2value = self.get_memory_address(instruction, 2, asize)
++
++                # Do logic
++                op2valuederef = self.get_memory(op2value, osize)
++
++                result = op1value ^ op2valuederef
++
++                self.set_flags("LOGIC", op1value, op2valuederef, result, osize)
++
++                self.set_register(op1.reg, result, osize)
++
++            opcode = instruction.opcode
++            if opcode in self.emu.opcode_handlers:
++                if op1valuederef != None and op2valuederef == None:
++                    self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1valuederef, op2value, op3value)
++                elif op2valuederef != None and op1valuederef == None:
++                    self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2valuederef, op3value)
++                else:
++                    self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2value, op3value)
++
+         #33 /r XOR r16,r/m16 r8  r/m8
+         #33 /r XOR r32,r/m32 r8  r/m8
+         elif instruction.opcode == 0x33:
