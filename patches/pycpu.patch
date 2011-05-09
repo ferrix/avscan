@@ -11,7 +11,7 @@ Index: PyCPU.py
  
  sys.path.append("lib")
  
-@@ -16759,6 +16759,44 @@
+@@ -16759,6 +16759,45 @@
                  else:
                      self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2value, op3value)
  
@@ -52,6 +52,7 @@ Index: PyCPU.py
 +                    self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2valuederef, op3value)
 +                else:
 +                    self.emu.opcode_handlers[opcode](self.emu, opcode, self.get_register32("EIP"), op1value, op2value, op3value)
++
 +
          #33 /r XOR r16,r/m16 r8  r/m8
          #33 /r XOR r32,r/m32 r8  r/m8
