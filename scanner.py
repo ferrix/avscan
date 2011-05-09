@@ -4,17 +4,30 @@ from functools import wraps
 import os
 import sys
 import cPickle
-sys.path.append(r'C:\pyemu')
-sys.path.append(r'C:\pyemu\lib')
+#sys.path.append(r'C:\pyemu')
+#sys.path.append(r'C:\pyemu\lib')
+
+DEBUG=0
+
+if 'SCANNER_DEBUG' in os.environ.keys():
+    DEBUG = int(os.environ['SCANNER_DEBUG'])
 
 try:
-    from PyEmu import PEPyEmu
+    import PyEmu, PyOS
 except:
     print "PyEmu not found"
     sys.exit(1)
 import time
 
-DEBUG=0
+class UnpackerPyEmu(PyEmu.PEPyEmu):
+    unpacker = False
+    unpacker_entry = 0
+    unpacker_end = 0
+
+class PyFakeWindows(PyOS.PyWindows):
+    def add_library(self, dll, function):
+	#self.libraries[0x00400000] = {'address': 0x00400000, 'name': function}
+	return True
 
 """ Check the beginning of the file with two hashes """
 def hashfile(path):
@@ -105,7 +118,9 @@ def scan(exe):
         print "The file %s seems safe. (cached)" % exe
         return True
 
-    emu = PEPyEmu()
+    emu = UnpackerPyEmu()
+    emu.os = PyFakeWindows()
+    emu.setup_os()
     emu.load(exe)
     emu.set_memory_write_handler(code_base_write_handler)
     
@@ -115,20 +130,20 @@ def scan(exe):
     emu.unpacker = False
 
     while(emu.execute()):
-        if DEBUG > 3:
+        if DEBUG > 4:
             print "0x%08x" % emu.cpu.EIP
 
-    if DEBUG > 0:
+    if DEBUG > 1:
         print "Execution stopped at 0x%08x" % emu.cpu.EIP
     
-    if DEBUG > 1:
+    if DEBUG > 2:
         if emu.unpacker:
             print "Unpacker started at:  0x%08x" % emu.unpacker_entry
             print "Unpacker finished at: 0x%08x" % emu.unpacker_end
 
     check_memory = emu.get_memory(emu.unpacker_entry, emu.unpacker_end-emu.unpacker_entry)
 
-    if DEBUG > 2:
+    if DEBUG > 3:
         print check_memory
 
     if "You must detect this file." in check_memory:
@@ -141,18 +156,13 @@ def scan(exe):
         return True
 
 if __name__ == "__main__":
-    filelist = [
-                   r"samples\bad1.exe",
-                   r"samples\bad2.exe",
-                   r"samples\bad3.exe",
-                   r"samples\bad4.exe",
-                   r"samples\bad5.exe",
-                   r"samples\good1.exe",
-                   r"samples\good2.exe",
-                   r"samples\good3.exe",
-                   r"samples\good4.exe",
-                   r"samples\good5.exe",
-               ]
+    filelist = []
+    for filename in sys.argv[1:]:
+        filelist.append(filename)
+
+    if not len(filelist):
+	print "Usage: %s files" % sys.argv[0]
+        sys.exit(1)
 
     for f in filelist:
         scan(f)
