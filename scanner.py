@@ -102,7 +102,7 @@ def code_base_write_handler(emu, address, value, size):
 
     return True
 
-def unpacker(exe, identifier):
+def unpacker(exe, identifiers):
     pe = pefile.PE(exe)
 
     packed = False
@@ -142,25 +142,32 @@ def unpacker(exe, identifier):
     if DEBUG > 3:
         print check_memory
 
-    if identifier in check_memory:
-        return True
-    else:
-        return False
+    for identifier in identifiers:
+        if identifier in check_memory:
+            return True
 
-def matcher(exe, identifier):
+    return False
+
+def matcher(exe, identifiers):
     b1 = ""
     with file(exe, 'rb') as f:
         while True:
             b2 = f.read(4096)
             if not b2:
                 return False
-            if identifier in b1+b2:
-                return True
+            for i in identifiers:
+                if i in b1+b2:
+                    return True
 
 scans = [
             ("matcher", matcher),
             ("unpacker", unpacker),
            ]
+
+identifiers = [
+    "X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",
+    "You must detect this file.",
+]
 
 """
 Run the executable in an emulator and to see if it contains the suspicious
@@ -179,13 +186,11 @@ def scan(exe):
         print "The file %s seems safe. (cached)" % exe
         return False
 
-    identifier = "You must detect this file."
-
     for (name, func) in scans:
-        result = func(exe, identifier)
+        result = func(exe, identifiers)
         
         if result == True:
-            print "The file %s is infected! (%s)" % exe, name
+            print "The file %s is infected! (%s)" % (exe, name)
             hashes.add_hash(exehash, True)
             return True
     
