@@ -4,8 +4,9 @@ from functools import wraps
 import os
 import sys
 import cPickle
-#sys.path.append(r'C:\pyemu')
-#sys.path.append(r'C:\pyemu\lib')
+import pefile
+sys.path.append(r'C:\pyemu')
+sys.path.append(r'C:\pyemu\lib')
 
 DEBUG=0
 
@@ -101,22 +102,17 @@ def code_base_write_handler(emu, address, value, size):
 
     return True
 
-"""
-Run the executable in an emulator and to see if it contains the suspicious
-string.
-"""
-@timing
-def scan(exe):
-    hashes = HashCache()
-    exehash = hashfile(exe)
-    cache = hashes.check_hash(exehash)
+def unpacker(exe, identifier):
+    pe = pefile.PE(exe)
 
-    if cache == True:
-        print "The file %s is infected! (cached)" % exe
-        return False 
-    elif cache == False:
-        print "The file %s seems safe. (cached)" % exe
-        return True
+    packed = False
+    
+    for section in pe.sections:
+        if getattr(section, 'IMAGE_SCN_MEM_WRITE') and getattr(section, 'IMAGE_SCN_MEM_EXECUTE'):
+            packed = True
+
+    if not packed:
+        return False
 
     emu = UnpackerPyEmu()
     emu.os = PyFakeWindows()
@@ -146,14 +142,56 @@ def scan(exe):
     if DEBUG > 3:
         print check_memory
 
-    if "You must detect this file." in check_memory:
-        print "The file %s is infected!" % exe
-        hashes.add_hash(exehash, True)
-        return False
-    else:
-        print "The file %s seems safe." % exe
-        hashes.add_hash(exehash, False)
+    if identifier in check_memory:
         return True
+    else:
+        return False
+
+def matcher(exe, identifier):
+    b1 = ""
+    with file(exe, 'rb') as f:
+        while True:
+            b2 = f.read(4096)
+            if not b2:
+                return False
+            if identifier in b1+b2:
+                return True
+
+scans = [
+            ("matcher", matcher),
+            ("unpacker", unpacker),
+           ]
+
+"""
+Run the executable in an emulator and to see if it contains the suspicious
+string.
+"""
+@timing
+def scan(exe):
+    hashes = HashCache()
+    exehash = hashfile(exe)
+    cache = hashes.check_hash(exehash)
+
+    if cache == True:
+        print "The file %s is infected! (cached)" % exe
+        return True 
+    elif cache == False:
+        print "The file %s seems safe. (cached)" % exe
+        return False
+
+    identifier = "You must detect this file."
+
+    for (name, func) in scans:
+        result = func(exe, identifier)
+        
+        if result == True:
+            print "The file %s is infected! (%s)" % exe, name
+            hashes.add_hash(exehash, True)
+            return True
+    
+    print "The file %s seems safe." % exe
+    hashes.add_hash(exehash, False)
+    return False
 
 if __name__ == "__main__":
     filelist = []
