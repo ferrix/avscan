@@ -125,7 +125,8 @@ def unpacker(exe, identifiers):
     # Piggyback a variable into the emulator
     emu.unpacker = False
 
-    while(emu.execute()):
+    for i in range(10000000):
+        emu.execute()
         if DEBUG > 4:
             print "0x%08x" % emu.cpu.EIP
 
