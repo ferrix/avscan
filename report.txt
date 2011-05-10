@@ -1,0 +1,110 @@
+Ferrix Hovi 61611R
+
+= Anti-Virus scanner in Python
+
+The scanner implements three detection mechanisms for the malicious files. As
+the first step the scanner checks whether the SHA256 hash matches a previously
+scanned file. The detections are stored in a cache and qualified as either
+malicious or non-malicious. If there is no previous result, the scanner moves
+on to try to find a malicious string within the sample with simple pattern
+matching. The the final step is emulating the execution of the sample in PyEmu
+to get past any encrypted or obfuscated code.
+
+== Usage
+
+To execute a scan, type:
+
+python scanner.py <path-to-samples>/*.exe
+
+To clean the hash cache remove hashcache.dat from the current directory.
+
+The environment variable SCANNER_DEBUG will provide more output with values
+above 0. The level 1 is most relevant because it provides timing data.
+
+For the unpacker to work, PyCPU in PyEmu needs to be patched with files
+the patch found under patches directory.
+
+== Details of the implementation
+
+The hasher executes the hash function for the entire file in 8 kilobyte blocks
+to avoid consuming too much memory with big files. The hash is stored to a
+local cache. This cache works somewhat like a virus definition database and
+could be hooked to an online service that stores reputation of different file
+hashes.
+
+The matcher reads the file in 4 kilobyte blocks again to avoid consuming too
+much memory. The previous 4 kilobyte block is stored in memory to avoid missing
+detections where the match would be at the block boundary. This should be
+replaced with a better matching algorithm. The matcher is able to detect the
+EICAR test file. None of the given samples are detected because of obfuscation.
+
+The unpacker checks whether any executable sections are also writable. This is
+a hint of a packed executable. If this hint is noticed, the execution of the
+sample is emulated using PyEmu. The PyEmu in question is patched to support the
+previously missing opcode 0x32 (XOR) which is used in all provided samples. The
+packer keeps track of all overwritten addresses in memory and hooks them with a
+pc_handler that is triggered when the EIP reaches an address that has been
+modified. This is a naive way of assuming that the unpacking has completed.
+The pattern matching is close to what the matcher function does. There should
+be a shared matcher that could be passed to other scans. The unpacker will stop
+executing the code after ten million steps to avoid getting tricked into
+consuming time. 
+
+PyEmu is invoked in a way that it will always pick Windows as its environment.
+As Linux does not have the windll library, the add_library call is overwritten
+with a stub to avoid crashes. The execution of the provided samples does not
+have to reach a point where it calls real libraries which makes it immune to
+this hack.
+
+The overall architecture is designed to be expandable with new scans by simply
+registering them in the "scans" list. The strings that are caught by the
+scanner are stored in the "identifiers" list. This would need to be developed
+further if there would be a more sophisticated matching algorithm.
+
+== Weaknesses in the implementation
+
+The cache implementation is not encrypted in any way and there are no ways the
+scanner can tell whether the integrity of the file can be trusted. The file is
+however used to skip scanning any files that are stored in cache. The main
+reason for implement such a functionality was to improve the execution time of
+the scanners for samples that are already analyzed once. The strengths and
+weaknesses of the Python hash implementations are unknown to me and should be
+reviewed in a real environment.
+
+A weakness in the implementation of the emulated unpacking is that it simply
+stops when the execution enters a modified address. This way it will not be
+able to perform pattern matching on samples that perform unpacking in more than
+one go. However it will keep the execution time short for the ones it is
+available to unpack. 
+
+The emulator used does not implement the full set of IA32 opcodes. There are
+several opcodes that are not implemented in PyEmu and to run the given samples
+I had to implement the opcode 0x32. The remaining missing opcodes will make the
+emulator unable to execute some samples. The emulator used should have as
+complete and correct implementation as possible to be invisible to the sample.
+
+The scanner does not run as a privileged user or have any other security
+features that would reveal that itself is being analyzed or tampered. It does
+not hook with the operating system in any way. It does not have a pattern
+database or any means to receive cache updates from a central location. However
+this would be easily supported by developing the HashCache further.
+
+To be maintainable and upgradeable the architecture should support adding new
+types of analysis more easily.
+
+== Performance and real life use
+
+The scanner will analyze a sample on my machine in roughly 150 ms. For
+previously hashed files the time will be 0.3-1 ms. The emulation is slow and
+would be problematic in practice. File size does not affect memory consumption
+heavily in hasher or matcher. The memory consumption of the emulator is
+unknown to me, but in short runs it consumes around 500 kilobytes of memory.
+The hash database is not packed at all so it is likely to consume too much disk
+in a real environment.
+
+The engine will mark everything that has the EICAR test file string in it and
+any file that before or after unpacking has "You should detect this file." in
+it. This is prone to errors. For example the scanner considers itself as a
+virus. The strings are however unlikely to appear in random files. I consider
+the likelihood of false negatives more likely. This is due to the simplicity of
+the engine.
