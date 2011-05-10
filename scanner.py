@@ -126,7 +126,8 @@ def unpacker(exe, identifiers):
     emu.unpacker = False
 
     for i in range(10000000):
-        emu.execute()
+        if not emu.execute():
+            break
         if DEBUG > 4:
             print "0x%08x" % emu.cpu.EIP
 
@@ -161,8 +162,8 @@ def matcher(exe, identifiers):
                     return True
 
 scans = [
-            ("matcher", matcher),
             ("unpacker", unpacker),
+            ("matcher", matcher),
            ]
 
 identifiers = [
